@@ -42,6 +42,18 @@ func TestClient(t *testing.T) {
 	assert.Equal(t, "credit_alphanum4", trades.Embedded.Records[0].CounterAssetType)
 	assert.Equal(t, "SLT", trades.Embedded.Records[0].CounterAssetCode)
 	assert.Equal(t, "GCKA6K5PCQ6PNF5RQBF7PQDJWRHO6UOGFMRLK3DYHDOI244V47XKQ4GP", trades.Embedded.Records[0].CounterAssetIssuer)
+
+	// error case: wrong resolution
+	trades, err = horizonClient.LoadTrades(
+		Asset{Type: "native"},
+		Asset{"credit_alphanum4", "SLT", "GCKA6K5PCQ6PNF5RQBF7PQDJWRHO6UOGFMRLK3DYHDOI244V47XKQ4GP"},
+		0,
+		1234567,
+	)
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "failed to load endpoint")
+	}
 }
 
 var tradesNormalResponse = `{
@@ -76,7 +88,7 @@ var tradesNormalResponse = `{
 "id": "61557992432078849-0",
 "paging_token": "61557992432078849-0",
 "ledger_close_time": "2017-11-02T13:19:18Z",
-"offer_id": "187430TODO",
+"offer_id": "187430",
 "base_account": "GAKLCFRTFDXKOEEUSBS23FBSUUVJRMDQHGCHNGGGJZQRK7BCPIMHUC4P",
 "base_amount": "0.1558000",
 "base_asset_type": "native",
