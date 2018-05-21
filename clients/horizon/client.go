@@ -178,8 +178,14 @@ func (c *Client) LoadTrades(
 	c.fixURLOnce.Do(c.fixURL)
 	query := url.Values{}
 
-	addAssetToQuery(query, "base", baseAsset)
-	addAssetToQuery(query, "counter", counterAsset)
+	query.Add("base_asset_type", baseAsset.Type)
+	query.Add("base_asset_code", baseAsset.Code)
+	query.Add("base_asset_issuer", baseAsset.Issuer)
+
+	query.Add("counter_asset_type", counterAsset.Type)
+	query.Add("counter_asset_code", counterAsset.Code)
+	query.Add("counter_asset_issuer", counterAsset.Issuer)
+
 	query.Add("offer_id", strconv.FormatInt(offerID, 10))
 	query.Add("resolution", strconv.FormatInt(resolution, 10))
 
@@ -202,10 +208,6 @@ func (c *Client) LoadTrades(
 		c.URL,
 		query.Encode(),
 	)
-
-	//TOOD
-	fmt.Println("endpint is:");
-	fmt.Println(endpoint);
 
 	// ensure our endpoint is a real url
 	_, err = url.Parse(endpoint)
@@ -286,16 +288,6 @@ func (c *Client) LoadOrderBook(
 
 	err = decodeResponse(resp, &orderBook)
 	return
-}
-
-func addAssetToQuery(v map[string][]string, assetPrefix string, asset Asset) {
-	if (asset.Type == "native") {
-		v[assetPrefix+"_asset_type"] = append(v[assetPrefix+"_asset_type"], asset.Type);
-	} else {
-		v[assetPrefix+"_asset_type"] = append(v[assetPrefix+"_asset_type"], asset.Type);
-		v[assetPrefix+"_asset_code"] = append(v[assetPrefix+"_asset_code"], asset.Code);
-		v[assetPrefix+"_asset_issuer"] = append(v[assetPrefix+"_asset_issuer"], asset.Issuer);
-	}
 }
 
 func (c *Client) stream(
