@@ -223,11 +223,11 @@ func (c *Client) LoadTrades(
 
 func addAssetToQuery(v map[string][]string, assetPrefix string, asset Asset) {
 	if (asset.Type == "native") {
-		v[assetPrefix+"_asset_type"] = append(v[assetPrefix+"_asset_type"], asset.Type);
+		v[assetPrefix+"_asset_type"] = []string{asset.Type};
 	} else {
-		v[assetPrefix+"_asset_type"] = append(v[assetPrefix+"_asset_type"], asset.Type);
-		v[assetPrefix+"_asset_code"] = append(v[assetPrefix+"_asset_code"], asset.Code);
-		v[assetPrefix+"_asset_issuer"] = append(v[assetPrefix+"_asset_issuer"], asset.Issuer);
+		v[assetPrefix+"_asset_type"] = []string{asset.Type};
+		v[assetPrefix+"_asset_code"] = []string{asset.Code};
+		v[assetPrefix+"_asset_issuer"] = []string{asset.Issuer};
 	}
 }
 
