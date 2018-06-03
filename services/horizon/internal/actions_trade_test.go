@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	. "github.com/stellar/go/services/horizon/internal/db2/history"
-	"github.com/stellar/go/services/horizon/internal/resource"
 	. "github.com/stellar/go/services/horizon/internal/test/trades"
 	"github.com/stellar/go/xdr"
 )
@@ -17,22 +17,35 @@ import (
 func TestTradeActions_Index(t *testing.T) {
 	ht := StartHTTPTest(t, "trades")
 	defer ht.Finish()
+	var records []horizon.Trade
+	var firstTrade horizon.Trade
 
 	// All trades
 	w := ht.Get("/trades")
 	if ht.Assert.Equal(200, w.Code) {
-		ht.Assert.PageOf(1, w.Body)
+		ht.Assert.PageOf(2, w.Body)
+
+		// 	ensure created_at is populated correctly
+		ht.UnmarshalPage(w.Body, &records)
+		firstTrade = records[0]
+
+		// 	ensure created_at is populated correctly
+		l := history.Ledger{}
+		hq := history.Q{Session: ht.HorizonSession()}
+		ht.Require.NoError(hq.LedgerBySequence(&l, 6))
+
+		ht.Assert.WithinDuration(l.ClosedAt, records[0].LedgerCloseTime, 1*time.Second)
 	}
 
-	// 	ensure created_at is populated correctly
-	records := []resource.Trade{}
-	ht.UnmarshalPage(w.Body, &records)
+	// reverse order
+	w = ht.Get("/trades?order=desc")
+	if ht.Assert.Equal(200, w.Code) {
+		ht.Assert.PageOf(2, w.Body)
+		ht.UnmarshalPage(w.Body, &records)
 
-	l := history.Ledger{}
-	hq := history.Q{Session: ht.HorizonSession()}
-	ht.Require.NoError(hq.LedgerBySequence(&l, 6))
-
-	ht.Assert.WithinDuration(l.ClosedAt, records[0].LedgerCloseTime, 1*time.Second)
+		// ensure that ordering is indeed reversed
+		ht.Assert.Equal(firstTrade, records[len(records)-1])
+	}
 
 	var q = make(url.Values)
 	q.Add("base_asset_type", "credit_alphanum4")
@@ -44,7 +57,7 @@ func TestTradeActions_Index(t *testing.T) {
 
 	w = ht.GetWithParams("/trades", q)
 	if ht.Assert.Equal(200, w.Code) {
-		ht.Assert.PageOf(1, w.Body)
+		ht.Assert.PageOf(2, w.Body)
 
 		records := []map[string]interface{}{}
 		ht.UnmarshalPage(w.Body, &records)
@@ -63,7 +76,7 @@ func TestTradeActions_Index(t *testing.T) {
 
 	w = ht.GetWithParams("/trades", q)
 	if ht.Assert.Equal(200, w.Code) {
-		ht.Assert.PageOf(1, w.Body)
+		ht.Assert.PageOf(2, w.Body)
 
 		records := []map[string]interface{}{}
 		ht.UnmarshalPage(w.Body, &records)
@@ -75,7 +88,7 @@ func TestTradeActions_Index(t *testing.T) {
 	// For offer
 	w = ht.Get("/offers/1/trades")
 	if ht.Assert.Equal(200, w.Code) {
-		ht.Assert.PageOf(1, w.Body)
+		ht.Assert.PageOf(2, w.Body)
 	}
 
 	w = ht.Get("/offers/2/trades")
@@ -86,12 +99,12 @@ func TestTradeActions_Index(t *testing.T) {
 	// for an account
 	w = ht.Get("/accounts/GA5WBPYA5Y4WAEHXWR2UKO2UO4BUGHUQ74EUPKON2QHV4WRHOIRNKKH2/trades")
 	if ht.Assert.Equal(200, w.Code) {
-		ht.Assert.PageOf(1, w.Body)
+		ht.Assert.PageOf(2, w.Body)
 	}
 
 	w = ht.Get("/accounts/GCXKG6RN4ONIEPCMNFB732A436Z5PNDSRLGWK7GBLCMQLIFO4S7EYWVU/trades")
 	if ht.Assert.Equal(200, w.Code) {
-		ht.Assert.PageOf(1, w.Body)
+		ht.Assert.PageOf(2, w.Body)
 		records := []map[string]interface{}{}
 		ht.UnmarshalPage(w.Body, &records)
 		ht.Assert.Contains(records[0], "base_amount")
@@ -116,7 +129,7 @@ func testPrice(t *HTTPT, priceStr string, priceR xdr.Price) {
 	}
 }
 
-func testTradeAggregationPrices(t *HTTPT, record resource.TradeAggregation) {
+func testTradeAggregationPrices(t *HTTPT, record horizon.TradeAggregation) {
 	testPrice(t, record.High, record.HighR)
 	testPrice(t, record.Low, record.LowR)
 	testPrice(t, record.Open, record.OpenR)
@@ -145,8 +158,8 @@ func TestTradeActions_Aggregation(t *testing.T) {
 	_, _, err = PopulateTestTrades(dbQ, start, numOfTrades, minute, numOfTrades)
 	ht.Require.NoError(err)
 
-	var records []resource.TradeAggregation
-	var record resource.TradeAggregation
+	var records []horizon.TradeAggregation
+	var record horizon.TradeAggregation
 	var nextLink string
 
 	q := make(url.Values)
@@ -314,7 +327,7 @@ func TestTradeActions_AggregationOrdering(t *testing.T) {
 	q.Add("order", "asc")
 	q.Add("resolution", "60000")
 
-	var records []resource.TradeAggregation
+	var records []horizon.TradeAggregation
 	w := ht.GetWithParams("/trade_aggregations", q)
 	if ht.Assert.Equal(200, w.Code) {
 		ht.Assert.PageOf(1, w.Body)
