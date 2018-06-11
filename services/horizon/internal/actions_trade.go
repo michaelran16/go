@@ -57,6 +57,12 @@ func (action *TradeIndexAction) loadRecords() {
 		trades.ForAccount(action.AccountFilter)
 	}
 
+	if (action.HasBaseAssetFilter != action.HasCounterAssetFilter) {
+		action.SetInvalidField("asset_type", errors.New("this endpoint supports asset pairs but only one asset supplied"))
+		//action.Err = errors.New("this endpoint supports asset pairs but only one asset supplied")
+		return
+	}
+
 	if action.HasBaseAssetFilter {
 
 		baseAssetId, err := action.HistoryQ().GetAssetID(action.BaseAssetFilter)
@@ -73,9 +79,6 @@ func (action *TradeIndexAction) loadRecords() {
 				return
 			}
 			trades = action.HistoryQ().TradesForAssetPair(baseAssetId, counterAssetId)
-		} else {
-			action.Err = errors.New("this endpoint supports asset pairs but only one asset supplied")
-			return
 		}
 	}
 
