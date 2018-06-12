@@ -57,7 +57,7 @@ func (action *TradeIndexAction) loadRecords() {
 		trades.ForAccount(action.AccountFilter)
 	}
 
-	// If both assets are provided, or no assets are provided, the API call should work
+	// If only one of the asset pair is provided, invalid parameter for request
 	if (action.HasBaseAssetFilter != action.HasCounterAssetFilter) {
 		if (!action.HasBaseAssetFilter) {
 			action.SetInvalidField(
@@ -74,6 +74,8 @@ func (action *TradeIndexAction) loadRecords() {
 		return
 	}
 
+	// For Trades endpoint, both assets should be provided
+	// For All Trades endpoint, none of the assets are needed
 	if action.HasBaseAssetFilter {
 
 		baseAssetId, err := action.HistoryQ().GetAssetID(action.BaseAssetFilter)
