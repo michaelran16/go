@@ -59,7 +59,18 @@ func (action *TradeIndexAction) loadRecords() {
 
 	// If both assets are provided, or no assets are provided, the API call should work
 	if (action.HasBaseAssetFilter != action.HasCounterAssetFilter) {
-		action.SetInvalidField("asset_type", errors.New("this endpoint supports asset pairs but only one asset supplied"))
+		if (!action.HasBaseAssetFilter) {
+			action.SetInvalidField(
+			"base_asset_type", errors.New("invalid asset type: was not one of 'native', 'credit_alphanum4', 'credit_alphanum12'"),
+			);
+		}
+
+		if (!action.HasCounterAssetFilter) {
+			action.SetInvalidField(
+				"counter_asset_type", errors.New("invalid asset type: was not one of 'native', 'credit_alphanum4', 'credit_alphanum12'"),
+			);
+		}
+
 		return
 	}
 
